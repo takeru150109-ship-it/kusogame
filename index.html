@@ -1,0 +1,3536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タイクーンゲーム 完全版</title>
+
+<style>
+
+body{
+margin:0;
+background:#12121a;
+color:white;
+font-family:sans-serif;
+text-align:center;
+overflow-x:hidden;
+}
+
+#titleScreen{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+background:linear-gradient(#1d1d30,#090910);
+}
+
+#gameScreen{
+display:none;
+padding-bottom:100px;
+}
+
+.topbar{
+background:#1d1d30;
+padding:10px;
+position:sticky;
+top:0;
+z-index:100;
+}
+
+button{
+border:none;
+border-radius:10px;
+padding:10px;
+background:#4b6cff;
+color:white;
+font-weight:bold;
+margin:3px;
+cursor:pointer;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
+gap:10px;
+padding:10px;
+}
+
+.card{
+background:#2a2a40;
+border-radius:14px;
+padding:8px;
+font-size:12px;
+}
+
+.N{border:2px solid gray;}
+.R{border:2px solid cyan;}
+.SR{
+border:2px solid violet;
+box-shadow:0 0 10px violet;
+}
+.LR{
+border:2px solid gold;
+box-shadow:0 0 10px gold;
+}
+.SECRET{
+border:2px solid red;
+box-shadow:0 0 15px red;
+animation:glow 1s infinite alternate;
+}
+
+@keyframes glow{
+from{transform:scale(1);}
+to{transform:scale(1.03);}
+}
+
+.lock{
+opacity:0.25;
+filter:grayscale(100%);
+}
+
+img{
+width:80px;
+height:80px;
+object-fit:contain;
+background:white;
+border-radius:10px;
+}
+
+.tapBtn{
+font-size:28px;
+padding:20px 40px;
+margin-top:20px;
+}
+
+#menu{
+position:fixed;
+bottom:0;
+width:100%;
+display:flex;
+background:#1a1a28;
+z-index:999;
+overflow-x:auto;
+}
+
+#menu button{
+flex:1;
+font-size:10px;
+border-radius:0;
+margin:0;
+padding:12px 4px;
+}
+
+.overlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#101018;
+display:none;
+flex-direction:column;
+overflow-y:auto;
+z-index:9999;
+padding-bottom:100px;
+}
+
+.closeBtn{
+margin:20px;
+}
+
+#effect{
+position:fixed;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+font-size:32px;
+font-weight:bold;
+color:gold;
+pointer-events:none;
+opacity:0;
+transition:0.3s;
+z-index:99999;
+}
+
+.secretText{
+color:red;
+font-weight:bold;
+}
+
+input,select{
+padding:8px;
+border-radius:8px;
+border:none;
+margin:5px;
+}
+
+#gachaEffect{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.85);
+display:none;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+z-index:999999;
+animation:fadeIn 0.3s;
+}
+
+#gachaFlash{
+position:absolute;
+width:100%;
+height:100%;
+background:white;
+opacity:0;
+}
+
+#gachaResult{
+font-size:40px;
+font-weight:bold;
+animation:pop 0.5s;
+}
+
+.gachaN{
+color:gray;
+}
+
+.gachaR{
+color:cyan;
+}
+
+.gachaSR{
+color:violet;
+text-shadow:0 0 20px violet;
+}
+
+.gachaLR{
+color:gold;
+text-shadow:0 0 30px gold;
+}
+
+.gachaSECRET{
+color:red;
+text-shadow:0 0 40px red;
+animation:secretShake 0.1s infinite;
+}
+
+@keyframes pop{
+0%{
+transform:scale(0);
+}
+100%{
+transform:scale(1);
+}
+}
+
+@keyframes fadeIn{
+from{
+opacity:0;
+}
+to{
+opacity:1;
+}
+}
+
+@keyframes secretShake{
+0%{transform:translateX(-3px);}
+50%{transform:translateX(3px);}
+100%{transform:translateX(-3px);}
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- タイトル -->
+<div id="titleScreen">
+
+<h1>タイクーンゲーム</h1>
+
+<button onclick="newGame()">
+最初から
+</button>
+
+<button onclick="continueGame()">
+続きから
+</button>
+
+<br><br>
+
+<input type="password" id="adminCode" placeholder="管理者コード">
+
+<button onclick="openAdmin()">
+管理者
+</button>
+
+</div>
+
+<!-- ゲーム -->
+<div id="gameScreen">
+
+<div class="topbar">
+
+💰 コイン:
+<span id="coins">0</span>
+
+<br>
+
+⭐ RP:
+<span id="rp">0</span>
+
+<br>
+
+<span id="info"></span>
+
+</div>
+
+<div id="effect"></div>
+
+<button
+id="skipBtn"
+onclick="skipGacha=true"
+style="
+display:none;
+position:fixed;
+top:20px;
+right:20px;
+z-index:999999;
+padding:10px 20px;
+"
+>
+SKIP
+</button>
+
+<div id="gachaEffect">
+
+<div id="gachaFlash"></div>
+
+<div id="gachaResult"></div>
+
+</div>
+
+<button class="tapBtn" onclick="tap()">
+TAP!!
+</button>
+
+<h2>所持キャラ</h2>
+
+<div id="cards" class="grid"></div>
+
+<!-- メニュー -->
+<div id="menu">
+
+<button onclick="gacha()">ガチャ</button>
+
+<button onclick="gacha10()">10連</button>
+
+<button onclick="gacha100()">100連</button>
+
+<button onclick="openParty()">編成</button>
+
+<button onclick="openCollection()">図鑑</button>
+
+<button onclick="openRP()">RP</button>
+
+<button onclick="openBoss()">ボス</button>
+
+<button onclick="openAchievement()">実績</button>
+
+<button onclick="openEvolution()">進化</button>
+
+<button onclick="openAwake()">覚醒</button>
+
+<button onclick="openMaterial()">素材</button>
+
+<button onclick="saveGame()">セーブ</button>
+
+<button onclick="rebirth()">転生</button>
+
+</div>
+
+</div>
+
+<!-- 編成 -->
+<div id="partyUI" class="overlay">
+
+<h2>パーティ編成</h2>
+
+<div id="partyNow"></div>
+
+<div id="partyList" class="grid"></div>
+
+<button class="closeBtn" onclick="closeParty()">
+閉じる
+</button>
+
+</div>
+
+<!-- 図鑑 -->
+<div id="collectionUI" class="overlay">
+
+<h2>図鑑</h2>
+
+<p class="secretText">
+SECRET以外をコンプすると
+創造神が0.0001%で出現
+</p>
+
+<div id="collectionGrid" class="grid"></div>
+
+<button class="closeBtn" onclick="closeCollection()">
+閉じる
+</button>
+
+</div>
+
+<!-- RP -->
+<div id="rpUI" class="overlay">
+
+<h2>RPショップ</h2>
+
+<p>
+RP:
+<span id="rpValue"></span>
+</p>
+
+<div id="rpShop"></div>
+
+<button class="closeBtn" onclick="closeRP()">
+閉じる
+</button>
+
+</div>
+
+<!-- ボス -->
+<div id="bossUI" class="overlay">
+
+<h2>ボス戦</h2>
+
+<div class="card">
+
+<h3 id="bossName"></h3>
+
+<div style="background:#333;height:25px;border-radius:20px;overflow:hidden;">
+
+<div id="bossBarInner"
+style="
+background:red;
+height:100%;
+width:100%;
+transition:0.3s;
+"></div>
+
+</div>
+
+<p>
+
+HP:
+<span id="bossHP"></span>
+/
+<span id="bossMaxHP"></span>
+
+</p>
+
+<button onclick="attackBoss()">
+攻撃
+</button>
+
+</div>
+
+<button class="closeBtn" onclick="closeBoss()">
+閉じる
+</button>
+
+</div>
+
+<!-- 実績 -->
+<div id="achievementUI" class="overlay">
+
+<h2>実績</h2>
+
+<div id="achievementList"></div>
+
+<button class="closeBtn" onclick="closeAchievement()">
+閉じる
+</button>
+
+</div>
+
+<!-- 進化 -->
+<div id="evolutionUI" class="overlay">
+
+<h2>進化</h2>
+
+<div id="evolutionList" class="grid"></div>
+
+<button class="closeBtn" onclick="closeEvolution()">
+閉じる
+</button>
+
+</div>
+
+<!-- 覚醒 -->
+
+<div id="awakeUI" class="overlay">
+
+<h2>覚醒</h2>
+
+<div id="awakeList" class="grid"></div>
+
+<button class="closeBtn" onclick="closeAwake()">
+閉じる
+</button>
+
+</div>
+
+<!-- キャラ詳細 -->
+<div id="detailUI" class="overlay">
+
+<h2>キャラ詳細</h2>
+
+<div id="detailContent"></div>
+
+<button class="closeBtn" onclick="closeDetail()">
+閉じる
+</button>
+
+</div>
+
+<!-- 素材一覧 -->
+<div id="materialUI" class="overlay">
+
+<h2>素材一覧</h2>
+
+<div id="materialList" class="grid"></div>
+
+<button class="closeBtn" onclick="closeMaterial()">
+閉じる
+</button>
+
+</div>
+
+<!-- 管理者 -->
+<div id="adminUI" class="overlay">
+
+<h2>管理者パネル</h2>
+
+<div class="card">
+
+<h3>お金追加</h3>
+
+<input type="number" id="addCoinValue">
+
+<button onclick="addCoinsAdmin()">
+追加
+</button>
+
+</div>
+
+<div class="card">
+
+<h3>RP追加</h3>
+
+<input type="number" id="addRPValue">
+
+<button onclick="addRPAdmin()">
+追加
+</button>
+
+</div>
+
+<div class="card">
+
+<h3>キャラ追加</h3>
+
+<select id="adminCharSelect"></select>
+
+<button onclick="giveCharAdmin()">
+入手
+</button>
+
+</div>
+
+<button onclick="closeAdmin()">
+閉じる
+</button>
+
+</div>
+
+<div
+id="resultUI"
+class="overlay"
+>
+
+<h2>ガチャ結果</h2>
+
+<div
+id="resultList"
+class="grid"
+></div>
+
+<button onclick="
+resultUI.style.display='none'
+">
+閉じる
+</button>
+
+</div>
+
+<script>
+
+console.log("JS読み込み成功");
+
+// ====================
+// 管理者
+// ====================
+
+const ADMIN_CODE="3335619";
+
+// ====================
+// データ
+// ====================
+
+let gameData={
+coins:0,
+rp:0,
+chars:{},
+collection:{},
+party:[],
+materials:{}
+};
+
+let rpUp={
+click:0,
+auto:0,
+gacha:0
+};
+
+let tapCount=0;
+
+let bossKills=0;
+
+let achievementGet={};
+
+let skipGacha=false;
+let gachaResults=[];
+
+// ====================
+// キャラ
+// ====================
+
+const charList=[
+
+// ====================
+// N
+// ====================
+
+{
+name:"スライム",
+multi:1,
+rarity:"N",
+img:"images/slime.jpg",
+
+awake:{
+need:"スライムコア",
+count:10,
+multi:2
+}
+},
+
+{
+name:"ベビースライム",
+multi:0.9,
+rarity:"N",
+img:"images/babyslime.jpg",
+
+awake:{
+need:"ぷよぷよゼリー",
+count:10,
+multi:2
+}
+},
+
+{
+name:"ゴブリン",
+multi:1.2,
+rarity:"N",
+img:"images/goblin.jpg",
+
+awake:{
+need:"ゴブリンの牙",
+count:12,
+multi:2.2
+}
+},
+
+{
+name:"コボルト",
+multi:1.3,
+rarity:"N",
+img:"images/kobold.jpg",
+
+awake:{
+need:"コボルトの爪",
+count:12,
+multi:2.2
+}
+},
+
+{
+name:"ウルフ",
+multi:1.4,
+rarity:"N",
+img:"images/wolf.jpg",
+
+awake:{
+need:"ウルフの毛皮",
+count:15,
+multi:2.5
+}
+},
+
+{
+name:"スケルトン",
+multi:1.5,
+rarity:"N",
+img:"images/skeleton.jpg",
+
+awake:{
+need:"スケルトンボーン",
+count:15,
+multi:2.5
+}
+},
+
+{
+name:"ゾンビ",
+multi:1.6,
+rarity:"N",
+img:"images/zombie.jpg",
+
+awake:{
+need:"腐敗した肉",
+count:15,
+multi:2.5
+}
+},
+
+{
+name:"インプ",
+multi:1.7,
+rarity:"N",
+img:"images/imp.jpg",
+
+awake:{
+need:"悪魔の角",
+count:18,
+multi:2.8
+}
+},
+
+{
+name:"ゴーレム",
+multi:1.8,
+rarity:"N",
+img:"images/golem.jpg",
+
+awake:{
+need:"ゴーレム岩石",
+count:20,
+multi:3
+}
+},
+
+{
+name:"リザードマン",
+multi:1.9,
+rarity:"N",
+img:"images/lizard.jpg",
+
+awake:{
+need:"トカゲの鱗",
+count:20,
+multi:3
+}
+},
+
+// ====================
+// R
+// ====================
+
+{
+name:"ナイト",
+multi:2,
+rarity:"R",
+img:"images/knight.jpg",
+
+awake:{
+need:"騎士の勲章",
+count:25,
+multi:3.5
+}
+},
+
+{
+name:"サムライ",
+multi:2.5,
+rarity:"R",
+img:"images/samurai.jpg",
+
+awake:{
+need:"武士の魂",
+count:25,
+multi:3.8
+}
+},
+
+{
+name:"アーチャー",
+multi:2.2,
+rarity:"R",
+img:"images/archer.jpg",
+
+awake:{
+need:"必中の矢",
+count:25,
+multi:3.6
+}
+},
+
+{
+name:"モンク",
+multi:2.3,
+rarity:"R",
+img:"images/monk.jpg",
+
+awake:{
+need:"拳法の巻物",
+count:28,
+multi:4
+}
+},
+
+{
+name:"パラディン",
+multi:2.8,
+rarity:"R",
+img:"images/paladin.jpg",
+
+awake:{
+need:"聖騎士の盾",
+count:30,
+multi:4.2
+}
+},
+
+{
+name:"アサシン",
+multi:2.6,
+rarity:"R",
+img:"images/assassin.jpg",
+
+awake:{
+need:"暗殺者の短剣",
+count:30,
+multi:4.3
+}
+},
+
+{
+name:"魔法剣士",
+multi:2.7,
+rarity:"R",
+img:"images/magicknight.jpg",
+
+awake:{
+need:"魔剣の欠片",
+count:32,
+multi:4.5
+}
+},
+
+{
+name:"レンジャー",
+multi:2.4,
+rarity:"R",
+img:"images/ranger.jpg",
+
+awake:{
+need:"森の羽根",
+count:32,
+multi:4.5
+}
+},
+
+// ====================
+// SR
+// ====================
+
+{
+name:"ドラゴン",
+multi:5,
+rarity:"SR",
+img:"images/dragon.jpg",
+
+awake:{
+need:"ドラゴンの鱗",
+count:40,
+multi:6
+}
+},
+
+{
+name:"フェニックス",
+multi:5.5,
+rarity:"SR",
+img:"images/phoenix.jpg",
+
+awake:{
+need:"不死鳥の羽",
+count:40,
+multi:6.5
+}
+},
+
+{
+name:"グリフォン",
+multi:5.2,
+rarity:"SR",
+img:"images/griffin.jpg",
+
+awake:{
+need:"天空の鉤爪",
+count:45,
+multi:7
+}
+},
+
+{
+name:"ユニコーン",
+multi:5.3,
+rarity:"SR",
+img:"images/unicorn.jpg",
+
+awake:{
+need:"聖獣の角",
+count:45,
+multi:7
+}
+},
+
+{
+name:"サイクロプス",
+multi:5.4,
+rarity:"SR",
+img:"images/cyclops.jpg",
+
+awake:{
+need:"巨人の目玉",
+count:50,
+multi:8
+}
+},
+
+{
+name:"デーモン",
+multi:5.6,
+rarity:"SR",
+img:"images/demon.jpg",
+
+awake:{
+need:"魔神の核",
+count:50,
+multi:8.5
+}
+},
+
+// ====================
+// LR
+// ====================
+
+{
+name:"神龍",
+multi:10,
+rarity:"LR",
+img:"images/shinryu.jpg",
+
+awake:{
+need:"神龍結晶",
+count:75,
+multi:12
+}
+},
+
+{
+name:"終焉龍",
+multi:12,
+rarity:"LR",
+img:"images/enddragon.jpg",
+
+awake:{
+need:"終焉の炎",
+count:80,
+multi:13
+}
+},
+
+{
+name:"天空神",
+multi:11,
+rarity:"LR",
+img:"images/skygod.jpg",
+
+awake:{
+need:"天空神の翼",
+count:80,
+multi:13
+}
+},
+
+{
+name:"大天使",
+multi:10.5,
+rarity:"LR",
+img:"images/angel.jpg",
+
+awake:{
+need:"天使の聖核",
+count:85,
+multi:14
+}
+},
+
+{
+name:"魔王",
+multi:12.5,
+rarity:"LR",
+img:"images/darklord.png",
+
+awake:{
+need:"魔王の玉座",
+count:90,
+multi:15
+}
+},
+
+// ====================
+// SECRET
+// ====================
+
+{
+name:"虚無神",
+multi:30,
+rarity:"SECRET",
+img:"images/voidgod.jpg",
+
+awake:{
+need:"虚無結晶",
+count:150,
+multi:25
+}
+},
+
+{
+name:"時空龍",
+multi:40,
+rarity:"SECRET",
+img:"images/timedragon.jpg",
+
+awake:{
+need:"時空の歯車",
+count:180,
+multi:30
+}
+},
+
+{
+name:"深淵王",
+multi:50,
+rarity:"SECRET",
+img:"images/abyssking.jpg",
+
+awake:{
+need:"深淵の心臓",
+count:200,
+multi:35
+}
+},
+
+{
+name:"創造神",
+multi:100,
+rarity:"SECRET",
+img:"images/creator.jpg",
+
+awake:{
+need:"創造の光",
+count:300,
+multi:50
+}
+},
+
+// ====================
+// 進化キャラ
+// ====================
+
+// N → R
+
+{
+name:"キングスライム",
+multi:5,
+rarity:"R",
+img:"images/kingslime.png"
+evolved:tru
+},
+
+{
+name:"メタルスライム",
+multi:5.2,
+rarity:"R",
+img:"images/metalslime.png"
+evolved:tru
+},
+
+{
+name:"ゴブリンキング",
+multi:5.5,
+rarity:"R",
+img:"images/goblinking.png"
+evolved:tru
+},
+
+{
+name:"コボルトロード",
+multi:5.7,
+rarity:"R",
+img:"images/koboldlord.png"
+evolved:tru
+},
+
+{
+name:"フェンリル",
+multi:6,
+rarity:"R",
+img:"images/fenrir.png"
+evolved:tru
+},
+
+{
+name:"デスナイト",
+multi:6.2,
+rarity:"R",
+img:"images/deathknight.png"
+evolved:tru
+},
+
+{
+name:"リッチ",
+multi:6.4,
+rarity:"R",
+img:"images/lich.png"
+evolved:tru
+},
+
+{
+name:"アークデビル",
+multi:6.6,
+rarity:"R",
+img:"images/archdevil.png"
+evolved:tru
+},
+
+{
+name:"タイタン",
+multi:7,
+rarity:"R",
+img:"images/titan.png"
+evolved:tru
+},
+
+{
+name:"ドラゴニュート",
+multi:7.2,
+rarity:"R",
+img:"images/dragonewt.png"
+evolved:tru
+},
+
+// R → SR
+
+{
+name:"聖騎士",
+multi:10,
+rarity:"SR",
+img:"images/holykight.png"
+evolved:tru
+},
+
+{
+name:"剣聖",
+multi:10.5,
+rarity:"SR",
+img:"images/kensei.png"
+evolved:tru
+},
+
+{
+name:"神射手",
+multi:10.2,
+rarity:"SR",
+img:"images/snipergod.png"
+evolved:tru
+},
+
+{
+name:"拳王",
+multi:10.8,
+rarity:"SR",
+img:"images/fistking.png"
+evolved:tru
+},
+
+{
+name:"聖天騎士",
+multi:11,
+rarity:"SR",
+img:"images/holyknight.png"
+evolved:tru
+},
+
+{
+name:"影王",
+multi:11.2,
+rarity:"SR",
+img:"images/shadowking.png"
+evolved:tru
+},
+
+{
+name:"ルーンブレイド",
+multi:11.5,
+rarity:"SR",
+img:"images/runeblade.png"
+evolved:tru
+},
+
+{
+name:"森羅の狩人",
+multi:11.7,
+rarity:"SR",
+img:"images/foresthunter.png"
+evolved:tru
+},
+
+// SR → LR
+
+{
+name:"古代龍",
+multi:20,
+rarity:"LR",
+img:"images/ancientdragon.png"
+evolved:tru
+},
+
+{
+name:"不死鳥王",
+multi:21,
+rarity:"LR",
+img:"images/phoenixking.png"
+evolved:tru
+},
+
+{
+name:"天空獣王",
+multi:22,
+rarity:"LR",
+img:"images/skybeast.png"
+evolved:tru
+},
+
+{
+name:"聖獣ユニコーン",
+multi:22.5,
+rarity:"LR",
+img:"images/holyunicorn.png"
+evolved:tru
+},
+
+{
+name:"破壊巨神",
+multi:23,
+rarity:"LR",
+img:"images/giantgod.png"
+evolved:tru
+},
+
+{
+name:"魔神王",
+multi:24,
+rarity:"LR",
+img:"images/demongod.png"
+evolved:tru
+},
+
+// LR → SECRET
+
+{
+name:"超神龍",
+multi:50,
+rarity:"SECRET",
+img:"images/supershinryu.png"
+evolved:tru
+},
+
+{
+name:"終焉神龍",
+multi:55,
+rarity:"SECRET",
+img:"images/endgoddragon.png"
+evolved:tru
+},
+
+{
+name:"天空創造神",
+multi:60,
+rarity:"SECRET",
+img:"images/skygodcreator.png"
+},
+
+{
+name:"熾天使",
+multi:65,
+rarity:"SECRET",
+img:"images/seraph.png"
+evolved:tru
+},
+
+{
+name:"魔神皇",
+multi:70,
+rarity:"SECRET",
+img:"images/demonemperor.png"
+evolved:tru
+},
+
+];
+
+const rarityRates={
+N:70,
+R:20,
+SR:7,
+LR:2.9,
+SECRET:0.1
+};
+
+// ====================
+// ボス
+// ====================
+
+const bossList=[
+
+{name:"ゴブリン王",hp:1000,reward:500},
+
+{name:"巨大スライム",hp:3000,reward:1500},
+
+{name:"オーク将軍",hp:7000,reward:4000},
+
+{name:"ドラゴン",hp:20000,reward:12000},
+
+{name:"死神",hp:50000,reward:30000},
+
+{name:"魔王",hp:100000,reward:70000},
+
+{name:"終焉龍",hp:500000,reward:300000},
+
+{name:"天界神",hp:2000000,reward:1000000},
+
+{name:"虚無神",hp:10000000,reward:5000000},
+
+{name:"創造神",hp:100000000,reward:50000000}
+
+];
+
+let bossIndex=0;
+
+let bossData={
+
+name:bossList[0].name,
+hp:bossList[0].hp,
+maxHp:bossList[0].hp,
+reward:bossList[0].reward
+
+};
+
+// ====================
+// 覚醒素材
+// ====================
+
+const materialData=[
+
+// ====================
+// N素材
+// ====================
+
+{
+name:"スライムコア",
+img:"images/slimecore.png"
+},
+
+{
+name:"ぷよぷよゼリー",
+img:"images/puyojelly.png"
+},
+
+{
+name:"ゴブリンの牙",
+img:"images/goblinfang.png"
+},
+
+{
+name:"コボルトの爪",
+img:"images/koboldclaw.png"
+},
+
+{
+name:"ウルフの毛皮",
+img:"images/wolffur.png"
+},
+
+{
+name:"スケルトンボーン",
+img:"images/skeletonbone.png"
+},
+
+{
+name:"腐敗した肉",
+img:"images/rottingmeat.png"
+},
+
+{
+name:"悪魔の角",
+img:"images/demonhorn.png"
+},
+
+{
+name:"ゴーレム岩石",
+img:"images/golemrock.png"
+},
+
+{
+name:"トカゲの鱗",
+img:"images/lizardscale.png"
+},
+
+// ====================
+// R素材
+// ====================
+
+{
+name:"騎士の勲章",
+img:"images/knightmedal.png"
+},
+
+{
+name:"武士の魂",
+img:"images/samuraisoul.png"
+},
+
+{
+name:"必中の矢",
+img:"images/perfectarrow.png"
+},
+
+{
+name:"拳法の巻物",
+img:"images/monkscroll.png"
+},
+
+{
+name:"聖騎士の盾",
+img:"images/paladinshield.png"
+},
+
+{
+name:"暗殺者の短剣",
+img:"images/assassindagger.png"
+},
+
+{
+name:"魔剣の欠片",
+img:"images/magicbladepiece.png"
+},
+
+{
+name:"森の羽根",
+img:"images/forestfeather.png"
+},
+
+// ====================
+// SR素材
+// ====================
+
+{
+name:"ドラゴンの鱗",
+img:"images/dragonscale.png"
+},
+
+{
+name:"不死鳥の羽",
+img:"images/phoenixfeather.png"
+},
+
+{
+name:"天空の鉤爪",
+img:"images/griffinclaw.png"
+},
+
+{
+name:"聖獣の角",
+img:"images/unicornhorn.png"
+},
+
+{
+name:"巨人の目玉",
+img:"images/cyclopseye.png"
+},
+
+{
+name:"魔神の核",
+img:"images/demoncore.png"
+},
+
+// ====================
+// LR素材
+// ====================
+
+{
+name:"神龍結晶",
+img:"images/shinryucrystal.png"
+},
+
+{
+name:"終焉の炎",
+img:"images/endflame.png"
+},
+
+{
+name:"天空神の翼",
+img:"images/skygodwing.png"
+},
+
+{
+name:"天使の聖核",
+img:"images/angelcore.png"
+},
+
+{
+name:"魔王の玉座",
+img:"images/darkthrone.png"
+},
+
+// ====================
+// SECRET素材
+// ====================
+
+{
+name:"虚無結晶",
+img:"images/voidcrystal.png"
+},
+
+{
+name:"時空の歯車",
+img:"images/timegear.png"
+},
+
+{
+name:"深淵の心臓",
+img:"images/abyssheart.png"
+},
+
+{
+name:"創造の光",
+img:"images/creationlight.png"
+}
+
+];
+
+// ====================
+// 実績
+// ====================
+
+const achievements=[
+
+{
+id:"tap100",
+name:"100タップ",
+check:()=>tapCount>=100,
+reward:5
+},
+
+{
+id:"boss10",
+name:"ボス10体撃破",
+check:()=>bossKills>=10,
+reward:20
+},
+
+{
+id:"coin1m",
+name:"100万コイン",
+check:()=>gameData.coins>=1000000,
+reward:50
+}
+
+];
+
+// ====================
+// 進化
+// ====================
+
+const evolutions=[
+
+// ====================
+// N → R
+// ====================
+
+{
+from:"スライム",
+to:"キングスライム",
+needLv:10,
+img:"images/kingslime.png",
+multi:5,
+rarity:"R"
+},
+
+{
+from:"ベビースライム",
+to:"メタルスライム",
+needLv:10,
+img:"images/metalslime.png",
+multi:5.2,
+rarity:"R"
+},
+
+{
+from:"ゴブリン",
+to:"ゴブリンキング",
+needLv:10,
+img:"images/goblinking.png",
+multi:5.5,
+rarity:"R"
+},
+
+{
+from:"コボルト",
+to:"コボルトロード",
+needLv:10,
+img:"images/koboldlord.png",
+multi:5.7,
+rarity:"R"
+},
+
+{
+from:"ウルフ",
+to:"フェンリル",
+needLv:10,
+img:"images/fenrir.png",
+multi:6,
+rarity:"R"
+},
+
+{
+from:"スケルトン",
+to:"デスナイト",
+needLv:10,
+img:"images/deathknight.png",
+multi:6.2,
+rarity:"R"
+},
+
+{
+from:"ゾンビ",
+to:"リッチ",
+needLv:10,
+img:"images/lich.png",
+multi:6.4,
+rarity:"R"
+},
+
+{
+from:"インプ",
+to:"アークデビル",
+needLv:10,
+img:"images/archdevil.png",
+multi:6.6,
+rarity:"R"
+},
+
+{
+from:"ゴーレム",
+to:"タイタン",
+needLv:10,
+img:"images/titan.png",
+multi:7,
+rarity:"R"
+},
+
+{
+from:"リザードマン",
+to:"ドラゴニュート",
+needLv:10,
+img:"images/dragonewt.png",
+multi:7.2,
+rarity:"R"
+},
+
+// ====================
+// R → SR
+// ====================
+
+{
+from:"ナイト",
+to:"聖騎士",
+needLv:20,
+img:"images/holykight.png",
+multi:10,
+rarity:"SR"
+},
+
+{
+from:"サムライ",
+to:"剣聖",
+needLv:20,
+img:"images/kensei.png",
+multi:10.5,
+rarity:"SR"
+},
+
+{
+from:"アーチャー",
+to:"神射手",
+needLv:20,
+img:"images/snipergod.png",
+multi:10.2,
+rarity:"SR"
+},
+
+{
+from:"モンク",
+to:"拳王",
+needLv:20,
+img:"images/fistking.png",
+multi:10.8,
+rarity:"SR"
+},
+
+{
+from:"パラディン",
+to:"聖天騎士",
+needLv:20,
+img:"images/holyknight.png",
+multi:11,
+rarity:"SR"
+},
+
+{
+from:"アサシン",
+to:"影王",
+needLv:20,
+img:"images/shadowking.png",
+multi:11.2,
+rarity:"SR"
+},
+
+{
+from:"魔法剣士",
+to:"ルーンブレイド",
+needLv:20,
+img:"images/runeblade.png",
+multi:11.5,
+rarity:"SR"
+},
+
+{
+from:"レンジャー",
+to:"森羅の狩人",
+needLv:20,
+img:"images/foresthunter.png",
+multi:11.7,
+rarity:"SR"
+},
+
+// ====================
+// SR → LR
+// ====================
+
+{
+from:"ドラゴン",
+to:"古代龍",
+needLv:35,
+img:"images/ancientdragon.png",
+multi:20,
+rarity:"LR"
+},
+
+{
+from:"フェニックス",
+to:"不死鳥王",
+needLv:35,
+img:"images/phoenixking.png",
+multi:21,
+rarity:"LR"
+},
+
+{
+from:"グリフォン",
+to:"天空獣王",
+needLv:35,
+img:"images/skybeast.png",
+multi:22,
+rarity:"LR"
+},
+
+{
+from:"ユニコーン",
+to:"聖獣ユニコーン",
+needLv:35,
+img:"images/holyunicorn.png",
+multi:22.5,
+rarity:"LR"
+},
+
+{
+from:"サイクロプス",
+to:"破壊巨神",
+needLv:35,
+img:"images/giantgod.png",
+multi:23,
+rarity:"LR"
+},
+
+{
+from:"デーモン",
+to:"魔神王",
+needLv:35,
+img:"images/demongod.png",
+multi:24,
+rarity:"LR"
+},
+
+// ====================
+// LR → SECRET
+// ====================
+
+{
+from:"神龍",
+to:"超神龍",
+needLv:50,
+img:"images/supershinryu.png",
+multi:50,
+rarity:"SECRET"
+},
+
+{
+from:"終焉龍",
+to:"終焉神龍",
+needLv:50,
+img:"images/endgoddragon.png",
+multi:55,
+rarity:"SECRET"
+},
+
+{
+from:"天空神",
+to:"天空創造神",
+needLv:50,
+img:"images/skygodcreator.png",
+multi:60,
+rarity:"SECRET"
+},
+
+{
+from:"大天使",
+to:"熾天使",
+needLv:50,
+img:"images/seraph.png",
+multi:65,
+rarity:"SECRET"
+},
+
+{
+from:"魔王",
+to:"魔神皇",
+needLv:50,
+img:"images/demonemperor.png",
+multi:70,
+rarity:"SECRET"
+}
+
+];
+
+// ====================
+// ゲーム開始
+// ====================
+
+function newGame(){
+
+try{
+
+localStorage.removeItem("tycoonSave");
+
+}catch(e){
+
+console.log(e);
+
+}
+
+gameData={
+coins:0,
+rp:0,
+chars:{},
+collection:{},
+party:[],
+materials:{}
+};
+
+rpUp={
+click:0,
+auto:0,
+gacha:0
+};
+
+bossKills=0;
+tapCount=0;
+achievementGet={};
+
+startGame();
+update();
+
+}
+
+function continueGame(){
+
+let save = localStorage.getItem("tycoonSave");
+
+if(save){
+
+let data = JSON.parse(save);
+
+gameData = data.gameData;
+rpUp = data.rpUp;
+bossKills = data.bossKills;
+tapCount = data.tapCount;
+achievementGet = data.achievementGet;
+
+startGame();
+update();
+
+}else{
+
+alert("セーブがありません");
+
+}
+
+}
+
+function startGame(){
+
+titleScreen.style.display="none";
+
+gameScreen.style.display="block";
+
+}
+
+// ====================
+// セーブ
+// ====================
+
+function saveGame(){
+
+try{
+
+localStorage.setItem(
+"tycoonSave",
+
+JSON.stringify({
+gameData,
+rpUp,
+bossKills,
+tapCount,
+achievementGet
+})
+
+);
+
+}catch(e){
+
+console.log("セーブ失敗");
+
+}
+
+}
+
+// ====================
+// エフェクト
+// ====================
+
+function showEffect(text){
+
+effect.innerHTML=text;
+
+effect.style.opacity="1";
+
+setTimeout(()=>{
+effect.style.opacity="0";
+},500);
+
+}
+
+function playGachaEffect(char){
+
+gachaEffect.style.display="flex";
+
+gachaResult.className=
+"gacha"+char.rarity;
+
+gachaResult.innerHTML=`
+
+<img src="${char.img}"
+style="
+width:200px;
+height:200px;
+border-radius:20px;
+background:white;
+">
+
+<br>
+
+${char.rarity}
+
+<br>
+
+${char.name}
+
+`;
+
+gachaFlash.style.opacity="1";
+
+setTimeout(()=>{
+gachaFlash.style.opacity="0";
+},100);
+
+setTimeout(()=>{
+gachaEffect.style.display="none";
+},1800);
+
+}
+
+async function playMultiGacha(chars){
+
+skipBtn.style.display="block";
+
+skipGacha=false;
+
+gachaResults=[];
+
+gachaEffect.style.display="flex";
+
+for(let c of chars){
+
+gachaResults.push(c);
+
+gachaResult.className="gacha"+c.rarity;
+
+gachaResult.innerHTML=`
+
+<br>
+
+${c.rarity}
+
+<br>
+
+${c.name}
+
+<br>
+
+${c.isNew ? 'NEW!' : ''}
+
+`;
+
+gachaFlash.style.opacity="1";
+
+setTimeout(()=>{
+gachaFlash.style.opacity="0";
+},80);
+
+if(!skipGacha){
+
+if(c.rarity==="LR" || c.rarity==="SECRET"){
+
+await new Promise(r=>setTimeout(r,1500));
+
+}else{
+
+await new Promise(r=>setTimeout(r,250));
+
+}
+
+}
+
+}
+
+skipBtn.style.display="none";
+
+gachaEffect.style.display="none";
+
+showResults();
+}
+
+// ====================
+// 倍率
+// ====================
+
+function getMulti(){
+
+let m=0;
+
+gameData.party.forEach(n=>{
+
+let c=gameData.chars[n];
+
+let d=charList.find(x=>x.name===n);
+
+if(c){
+
+let power =
+d.multi * (1 + c.lv * 0.2);
+if(c.awake){
+
+power*=d.awake.multi;
+
+}
+
+m+=power;
+
+}
+
+});
+
+return Math.max(1,m)*(1+rpUp.click);
+
+}
+
+// ====================
+// タップ
+// ====================
+
+function tap(){
+
+tapCount++;
+
+let gain=getMulti();
+
+gameData.coins+=gain;
+
+showEffect("+"+Math.floor(gain));
+
+update();
+
+}
+
+// ====================
+// ガチャ
+// ====================
+
+function randomChar(){
+
+let complete=true;
+
+charList.forEach(c=>{
+
+if(c.rarity!=="SECRET"){
+
+if(!gameData.collection[c.name]){
+
+complete=false;
+
+}
+
+}
+
+});
+
+if(complete){
+
+if(Math.random()*1000000<1){
+
+return charList.find(
+c => c.name === "創造神"
+);
+
+}
+
+}
+
+let rand=Math.random()*100;
+
+let sum=0;
+
+for(let r in rarityRates){
+
+sum+=rarityRates[r];
+
+if(rand<sum){
+
+let pool=charList.filter(
+c=>c.rarity===r && !c.evolved
+);
+
+return pool[Math.floor(Math.random()*pool.length)];
+
+}
+
+}
+
+// 保険
+return charList[0];
+
+}
+
+// ====================
+// キャラ追加
+// ====================
+
+function addChar(c){
+
+c.isNew=!gameData.collection[c.name];
+
+if(!gameData.chars[c.name]){
+
+gameData.chars[c.name]={
+count:0,
+lv:1,
+exp:0
+};
+
+}
+
+let data=gameData.chars[c.name];
+
+data.count++;
+
+data.exp++;
+
+if(data.exp>=data.lv*5){
+
+data.exp=0;
+
+data.lv++;
+
+showEffect(c.name+" LvUP!");
+
+}
+
+gameData.collection[c.name]=true;
+
+showEffect(c.rarity+" "+c.name);
+
+}
+
+// ====================
+// ガチャ
+// ====================
+
+function gacha(){
+
+let cost=
+Math.max(10,100-rpUp.gacha*5);
+
+if(gameData.coins<cost)return;
+
+gameData.coins-=cost;
+
+let c=randomChar();
+
+addChar(c);
+
+playGachaEffect(c);
+
+update();
+
+}
+
+function gacha10(){
+
+if(gameData.coins<1000)return;
+
+gameData.coins-=1000;
+
+let results=[];
+
+for(let i=0;i<10;i++){
+
+let c=randomChar();
+
+results.push(c);
+
+addChar(c);
+
+}
+
+playMultiGacha(results);
+
+update();
+
+}
+
+function gacha100(){
+
+if(gameData.coins<10000)return;
+
+gameData.coins-=10000;
+
+let results=[];
+
+for(let i=0;i<100;i++){
+
+let c=randomChar();
+
+results.push(c);
+
+addChar(c);
+
+}
+
+playMultiGacha(results);
+
+update();
+
+}
+
+// ====================
+// 編成
+// ====================
+
+function openParty(){
+
+partyUI.style.display="flex";
+
+renderParty();
+
+}
+
+function renderParty(){
+
+partyNow.innerHTML = "現在:" + gameData.party.join(" / ");
+
+partyList.innerHTML="";
+
+for(let n in gameData.chars){
+
+let d=charList.find(x=>x.name===n);
+
+let data=gameData.chars[n];
+
+partyList.innerHTML += `
+
+<div class="card ${d.rarity}">
+<img src="${d.img}" onerror="this.src='images/none.png'">
+
+<br>
+
+${n}
+
+<br>
+
+Lv ${data.lv}
+
+<br>
+
+x${data.count}
+
+<br><br>
+
+<button onclick="addP('${n}')">
+追加
+</button>
+
+<button onclick="removeP('${n}')">
+外す
+</button>
+
+</div>
+
+`;
+
+}
+
+}
+
+function closeParty(){
+
+partyUI.style.display="none";
+
+}
+
+function addP(n){
+
+if(gameData.party.length>=5)return;
+
+if(!gameData.party.includes(n)){
+
+gameData.party.push(n);
+
+}
+
+renderParty();
+
+update();
+
+}
+
+function removeP(n){
+
+gameData.party=
+gameData.party.filter(
+x=>x!==n
+);
+
+renderParty();
+
+update();
+
+}
+
+// ====================
+// 図鑑
+// ====================
+
+function openCollection(){
+
+collectionUI.style.display="flex";
+
+renderCollection();
+
+}
+
+function closeCollection(){
+
+collectionUI.style.display="none";
+
+}
+
+function renderCollection(){
+
+collectionGrid.innerHTML="";
+
+charList.forEach(c=>{
+
+let owned=
+gameData.collection[c.name];
+
+collectionGrid.innerHTML+=`
+
+<div class="card ${c.rarity} ${owned?"":"lock"}">
+
+<img src="${c.img}">
+
+<br>
+
+${owned?c.name:"？？？"}
+
+</div>
+
+`;
+
+});
+
+}
+
+// ====================
+// RP
+// ====================
+
+const shopList=[
+
+{id:"click",name:"クリック強化",baseCost:1,maxLv:10},
+
+{id:"auto",name:"自動収入",baseCost:2,maxLv:10},
+
+{id:"gacha",name:"ガチャ割引",baseCost:3,maxLv:10}
+
+];
+
+function openRP(){
+
+rpUI.style.display="flex";
+
+renderShop();
+
+}
+
+function closeRP(){
+
+rpUI.style.display="none";
+
+}
+
+function renderShop(){
+
+rpValue.innerHTML=gameData.rp;
+
+rpShop.innerHTML="";
+
+shopList.forEach(s=>{
+
+let lv=rpUp[s.id];
+
+let cost=s.baseCost*(lv+1);
+
+rpShop.innerHTML+=`
+
+<div class="card">
+
+${s.name}
+
+<br>
+
+Lv ${lv}/${s.maxLv}
+
+<br>
+
+必要RP:${cost}
+
+<br>
+
+<button onclick="buy('${s.id}')">
+
+購入
+
+</button>
+
+</div>
+
+`;
+
+});
+
+}
+
+function buy(id){
+
+let s=shopList.find(x=>x.id===id);
+
+let lv=rpUp[id];
+
+if(lv>=s.maxLv){
+
+alert("最大Lvです");
+
+return;
+
+}
+
+let cost=s.baseCost*(lv+1);
+
+if(gameData.rp<cost)return;
+
+gameData.rp-=cost;
+
+rpUp[id]++;
+
+update();
+
+renderShop();
+
+}
+
+// ====================
+// ボス
+// ====================
+
+function openBoss(){
+
+bossUI.style.display="flex";
+
+renderBoss();
+
+}
+
+function closeBoss(){
+
+bossUI.style.display="none";
+
+}
+
+function renderBoss(){
+
+bossName.innerHTML=bossData.name;
+
+bossHP.innerHTML=
+Math.floor(bossData.hp);
+
+bossMaxHP.innerHTML=
+bossData.maxHp;
+
+bossBarInner.style.width=
+(bossData.hp/bossData.maxHp*100)+"%";
+
+}
+
+function attackBoss(){
+
+let dmg=getMulti(); 
+
+bossData.hp-=dmg;
+
+if(bossData.hp<0){
+
+bossData.hp=0;
+
+}
+
+showEffect("-"+Math.floor(dmg));
+
+if(bossData.hp<=0){
+
+// ====================
+// 素材ドロップ
+// ====================
+
+let dropPool=[];
+
+// N素材
+if(
+bossData.name==="ゴブリン王" ||
+bossData.name==="巨大スライム"
+){
+dropPool=
+charList.filter(
+c=>c.rarity==="N" && c.awake
+);
+}
+
+// R素材
+if(
+bossData.name==="オーク将軍" ||
+bossData.name==="ドラゴン" ||
+bossData.name==="死神"
+){
+dropPool=
+charList.filter(
+c=>c.rarity==="R" && c.awake
+);
+}
+
+// SR素材
+if(
+bossData.name==="魔王" ||
+bossData.name==="終焉龍" ||
+bossData.name==="天界神"
+){
+dropPool=
+charList.filter(
+c=>c.rarity==="SR" && c.awake
+);
+}
+
+// LR素材
+if(
+bossData.name==="虚無神" ||
+bossData.name==="創造神"
+){
+dropPool=
+charList.filter(
+c=>c.rarity==="LR" && c.awake
+);
+}
+
+// ドロップ
+if(dropPool.length>0){
+
+// 30%ドロップ
+if(Math.random()<0.3){
+
+let dropChar=
+dropPool[
+Math.floor(
+Math.random()*dropPool.length
+)
+];
+
+let materialName=
+dropChar.awake.need;
+
+if(!gameData.materials){
+gameData.materials={};
+}
+
+if(!gameData.materials[materialName]){
+gameData.materials[materialName]=0;
+}
+
+gameData.materials[materialName]++;
+
+showEffect(
+materialName+" GET!"
+);
+
+}
+
+}
+
+gameData.coins += bossData.reward;
+bossKills++;
+
+showEffect("撃破!");
+
+bossIndex++;
+
+if(bossIndex>=bossList.length){
+bossIndex=0;
+}
+
+let next=bossList[bossIndex];
+
+bossData={
+name:next.name,
+hp:next.hp,
+maxHp:next.hp,
+reward:next.reward
+};
+
+renderBoss();
+update();
+
+}
+
+renderBoss();
+update();
+
+}
+
+// ====================
+// 実績
+// ====================
+
+function openAchievement(){
+
+achievementUI.style.display="flex";
+
+renderAchievement();
+
+}
+
+function closeAchievement(){
+
+achievementUI.style.display="none";
+
+}
+
+function renderAchievement(){
+
+achievementList.innerHTML="";
+
+achievements.forEach(a=>{
+
+let clear=a.check();
+
+let got=
+achievementGet[a.id];
+
+achievementList.innerHTML+=`
+
+<div class="card">
+
+${a.name}
+
+<br>
+
+報酬:${a.reward}RP
+
+<br><br>
+
+${
+clear
+?
+(
+got
+?
+"取得済"
+:
+`<button onclick="getAchievement('${a.id}')">
+受け取る
+</button>`
+)
+:
+"未達成"
+}
+
+</div>
+
+`;
+
+});
+
+}
+
+function getAchievement(id){
+
+let a=
+achievements.find(
+x=>x.id===id
+);
+
+if(!a.check())return;
+
+if(achievementGet[id])return;
+
+achievementGet[id]=true;
+
+gameData.rp+=a.reward;
+
+showEffect("実績達成!");
+
+update();
+
+renderAchievement();
+
+}
+
+// ====================
+// 進化
+// ====================
+
+function openEvolution(){
+
+evolutionUI.style.display="flex";
+
+renderEvolution();
+
+}
+
+function closeEvolution(){
+
+evolutionUI.style.display="none";
+
+}
+
+function renderEvolution(){
+
+evolutionList.innerHTML="";
+
+evolutions.forEach(e=>{
+
+let data=
+gameData.chars[e.from];
+
+if(!data)return;
+
+evolutionList.innerHTML+=`
+
+<div class="card">
+
+${e.from}
+
+↓
+
+${e.to}
+
+<br>
+
+必要Lv:${e.needLv}
+
+<br><br>
+
+<button onclick="evolve('${e.from}')">
+
+進化
+
+</button>
+
+</div>
+
+`;
+
+});
+
+}
+
+function evolve(name){
+
+let evo=evolutions.find(x=>x.from===name);
+
+if(!evo)return;
+
+let data=gameData.chars[name];
+
+if(data.lv<evo.needLv){
+
+alert("Lv不足");
+
+return;
+
+}
+
+delete gameData.chars[name];
+
+gameData.chars[evo.to]={
+
+count:1,
+lv:1,
+exp:0
+
+};
+
+// パーティ更新
+gameData.party =
+gameData.party.filter(
+x=>x!==name
+);
+
+if(gameData.party.length<5){
+
+gameData.party.push(evo.to);
+
+}
+
+gameData.collection[evo.to]=true;
+
+showEffect(evo.to+" に進化!");
+
+renderEvolution();
+
+update();
+
+}
+
+// ====================
+// 覚醒
+// ====================
+
+function openAwake(){
+
+awakeUI.style.display="flex";
+
+renderAwake();
+
+}
+
+function closeAwake(){
+
+awakeUI.style.display="none";
+
+}
+
+function renderAwake(){
+
+awakeList.innerHTML="";
+
+charList.forEach(c=>{
+
+if(!c.awake)return;
+
+let data=
+gameData.chars[c.name];
+
+if(!data)return;
+
+let matName=c.awake.need;
+
+let need=c.awake.count;
+
+let have=
+gameData.materials[matName]||0;
+
+awakeList.innerHTML+=`
+
+<div class="card ${c.rarity}">
+
+<img src="${c.img}">
+
+<br>
+
+${c.name}
+
+<br><br>
+
+必要素材:
+${matName}
+
+<br>
+
+${have}/${need}
+
+<br><br>
+
+<button onclick="awakeChar('${c.name}')">
+
+覚醒
+
+</button>
+
+</div>
+
+`;
+
+});
+
+}
+
+function awakeChar(name){
+
+let c=charList.find(x=>x.name===name);
+
+let data=gameData.chars[name];
+
+if(data.awake){
+
+alert("既に覚醒済み");
+
+return;
+
+}
+
+if(!c.awake)return;
+
+let matName=c.awake.need;
+
+let need=c.awake.count;
+
+let have=gameData.materials[matName]||0;
+
+if(have<need){
+
+alert("素材不足");
+
+return;
+
+}
+
+gameData.materials[matName]-=need;
+
+data.awake=true;
+
+showEffect(name+" 覚醒!");
+
+renderAwake();
+
+update();
+
+}
+
+// ====================
+// 素材一覧
+// ====================
+
+function openMaterial(){
+
+materialUI.style.display="flex";
+
+renderMaterial();
+
+}
+
+function closeMaterial(){
+
+materialUI.style.display="none";
+
+}
+
+function renderMaterial(){
+
+materialList.innerHTML="";
+
+if(!gameData.materials){
+
+gameData.materials={};
+
+}
+
+let keys=Object.keys(gameData.materials);
+
+if(keys.length===0){
+
+materialList.innerHTML="素材を持っていません";
+
+return;
+
+}
+
+keys.forEach(m=>{
+
+let amount = gameData.materials[m];
+
+let mat = materialData.find(x => x.name === m);
+
+materialList.innerHTML += `
+
+<div class="card">
+
+<img
+src="${mat?.img || 'images/none.png'}"
+onerror="this.src='images/none.png'"
+>
+
+<br>
+
+${m}
+
+<br>
+
+x${amount}
+
+</div>
+
+`;
+
+});
+
+}
+
+// ====================
+// 転生
+// ====================
+
+function rebirth(){
+
+if(gameData.coins<10000)return;
+
+let gain=
+Math.floor(
+gameData.coins/10000
+);
+
+gameData.rp+=gain;
+
+gameData.coins=0;
+
+gameData.chars={};
+
+gameData.party=[];
+
+showEffect(
+"転生! +"+gain+"RP"
+);
+
+update();
+
+}
+
+// ====================
+// 管理者
+// ====================
+
+function openAdmin(){
+
+let code=
+adminCode.value;
+
+if(code!==ADMIN_CODE){
+
+alert("コードが違います");
+
+return;
+
+}
+
+adminUI.style.display="flex";
+
+adminCharSelect.innerHTML="";
+
+charList.forEach(c=>{
+
+adminCharSelect.innerHTML+=`
+
+<option value="${c.name}">
+${c.name}
+</option>
+
+`;
+
+});
+
+}
+
+function closeAdmin(){
+
+adminUI.style.display="none";
+
+}
+
+function addCoinsAdmin(){
+
+gameData.coins+=
+Number(addCoinValue.value);
+
+update();
+
+}
+
+function addRPAdmin(){
+
+gameData.rp+=
+Number(addRPValue.value);
+
+update();
+
+}
+
+function giveCharAdmin(){
+
+let n=
+adminCharSelect.value;
+
+let c=
+charList.find(x=>x.name===n);
+
+addChar(c);
+
+update();
+
+}
+
+// ====================
+// 自動収入
+// ====================
+
+setInterval(()=>{
+
+gameData.coins
++=rpUp.auto*2;
+
+update();
+
+},1000);
+
+// ====================
+// キャラ詳細
+// ====================
+
+let currentDetail=null;
+
+function openDetail(name){
+
+currentDetail=name;
+
+detailUI.style.display="flex";
+
+renderDetail();
+
+}
+
+function closeDetail(){
+
+detailUI.style.display="none";
+
+}
+
+function renderDetail(){
+
+let data=
+gameData.chars[currentDetail];
+
+let d=
+charList.find(
+x=>x.name===currentDetail
+);
+
+if(!data)return;
+
+let rarityCost=1;
+
+if(d.rarity==="R") rarityCost=2;
+if(d.rarity==="SR") rarityCost=5;
+if(d.rarity==="LR") rarityCost=12;
+if(d.rarity==="SECRET") rarityCost=50;
+
+let coinCost=
+Math.floor(
+100*
+data.lv*
+rarityCost
+);
+
+let rpCost=
+Math.max(
+1,
+Math.floor(data.lv/5)
+*
+rarityCost
+);
+
+detailContent.innerHTML=`
+
+<div class="card ${d.rarity}">
+
+<img
+src="${d.img}"
+style="
+width:150px;
+height:150px;
+"
+>
+
+<h2>${d.name}</h2>
+
+<p>
+レア度:${d.rarity}
+</p>
+
+<p>
+Lv:${data.lv}
+</p>
+
+<p>
+EXP:
+${data.exp}/${data.lv*5}
+</p>
+
+<p>
+所持数:${data.count}
+</p>
+
+<p>
+倍率:
+x${(
+d.multi*
+(1+data.lv*0.1)
+).toFixed(1)}
+</p>
+
+<hr>
+
+<h3>コイン強化</h3>
+
+<p>
+必要コイン:
+${coinCost}
+</p>
+
+<button onclick="levelUpCoin()">
+レベルアップ
+</button>
+
+<hr>
+
+<h3>RP強化</h3>
+
+<p>
+必要RP:
+${rpCost}
+</p>
+
+<button onclick="levelUpRP()">
+超強化
+</button>
+
+</div>
+
+`;
+
+}
+
+// コイン強化
+function levelUpCoin(){
+
+let data=
+gameData.chars[currentDetail];
+
+let d=
+charList.find(
+x=>x.name===currentDetail
+);
+
+let rarityCost=1;
+
+if(d.rarity==="R") rarityCost=2;
+if(d.rarity==="SR") rarityCost=5;
+if(d.rarity==="LR") rarityCost=12;
+if(d.rarity==="SECRET") rarityCost=50;
+
+let cost=
+Math.floor(
+100*
+data.lv*
+rarityCost
+);
+
+if(gameData.coins<cost){
+
+alert("コイン不足");
+
+return;
+
+}
+
+gameData.coins-=cost;
+
+data.lv++;
+
+showEffect(
+d.name+" LvUP!"
+);
+
+renderDetail();
+
+update();
+
+}
+
+function showResults(){
+
+resultUI.style.display="flex";
+
+resultList.innerHTML="";
+
+gachaResults.forEach(c=>{
+
+resultList.innerHTML+=`
+
+<div class="card ${c.rarity}">
+
+<img src="${c.img}">
+
+<br>
+
+${c.name}
+
+<br>
+
+${c.isNew ? 'NEW!' : ''}
+
+</div>
+
+`;
+
+});
+
+}
+
+// RP強化
+function levelUpRP(){
+
+let data=
+gameData.chars[currentDetail];
+
+let d=
+charList.find(
+x=>x.name===currentDetail
+);
+
+let rarityCost=1;
+
+if(d.rarity==="R") rarityCost=2;
+if(d.rarity==="SR") rarityCost=5;
+if(d.rarity==="LR") rarityCost=12;
+if(d.rarity==="SECRET") rarityCost=50;
+
+let cost=
+Math.max(
+1,
+Math.floor(data.lv/5)
+*
+rarityCost
+);
+
+if(gameData.rp<cost){
+
+alert("RP不足");
+
+return;
+
+}
+
+gameData.rp-=cost;
+
+data.lv+=3;
+
+showEffect(
+d.name+" 超強化!"
+);
+
+renderDetail();
+
+update();
+
+}
+
+// ====================
+// 更新
+// ====================
+
+function update(){
+
+coins.innerHTML=Math.floor(gameData.coins);
+
+rp.innerHTML=gameData.rp;
+
+info.innerHTML="編成:"+gameData.party.length+"/5";
+
+cards.innerHTML="";
+
+for(let c in gameData.chars){
+
+let d=charList.find(x=>x.name===c);
+
+if(!d)continue;
+
+let data=gameData.chars[c];
+
+cards.innerHTML += `
+
+<div
+class="card ${d.rarity}"
+onclick="openDetail('${c}')"
+>
+
+<img
+src="${d.img}"
+onerror="this.src='images/none.png'"
+>
+
+<br>
+
+${c}
+
+<br>
+
+${data.awake ? "🔥覚醒済み" : ""}
+
+<br>
+
+Lv ${data.lv}
+
+<br>
+
+EXP:
+${data.exp}/${data.lv*5}
+
+<br>
+
+x${data.count}
+
+</div>
+
+`;
+
+}
+
+}
+
+setInterval(()=>{
+
+saveGame();
+
+},5000);
+
+</script>
+
+</body>
+</html>
